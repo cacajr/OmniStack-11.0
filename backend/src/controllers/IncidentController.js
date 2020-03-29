@@ -15,8 +15,26 @@ module.exports = {
         return response.json({ id });
     },
     
-    async list (resquest, response) {
-        const incidents = await connection('incidents').select('*');
+    async list (request, response) {
+        //take the request query for the pagination ex:(?page=2)
+        const {page} = request.query;
+
+        const [count] = await connection('incidents').count();
+
+        const incidents = await connection('incidents')
+            .join('ongs', 'ongs.id', '=', 'incidents.ong_id')
+            .limit(5)
+            .offset((page - 1) * 5)
+            .select(['incidents.*',
+                    'ongs.name', 
+                    'ongs.email', 
+                    'ongs.whatsapp',
+                    'ongs.city',
+                    'ongs.uf'
+            ]);
+
+        //return the total number of the incidents in the response request header
+        response.header('X-Total-Count', count['count(*)']);
 
         return response.json( incidents );
     },
